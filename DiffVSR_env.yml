@@ -1,4 +1,4 @@
-name: stable24
+name: DiffVSR
 channels:
   - pytorch
   - nvidia
@@ -304,4 +304,3 @@ dependencies:
       - yacs==0.1.8
       - yapf==0.40.2
       - zipp==3.15.0
-prefix: /cpfs01/user/lixiaohui/.conda/envs/stable24
