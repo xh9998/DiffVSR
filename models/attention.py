@@ -522,7 +522,7 @@ class BasicTransformerBlock(nn.Module):
         
         
         if self.msatten:
-            # 添加新的时间注意力分支
+            # Add a new temporal attention branch
             self.attn_temporal_small = TemporalAttention(
                 query_dim=dim,
                 heads=num_attention_heads,
@@ -621,11 +621,11 @@ class BasicTransformerBlock(nn.Module):
                 norm_hidden_states = (self.norm_temporal(hidden_states, timestep)
                                     if self.use_ada_layer_norm else self.norm_temporal(hidden_states))
 
-                # 原始时间注意力
+                # Original temporal attention
                 temporal_attn_output = self.attn_temporal(norm_hidden_states) + hidden_states
 
-                # 新的多尺度时间注意力分支
-                # 将输入重塑为2D卷积可以接受的形状
+                # New multi-scale temporal attention branch
+                # Reshape to a 2D-conv acceptable shape
                 small_hidden_states = rearrange(hidden_states, '(b h w) f c -> (b f) c h w', f=video_length, h=h, w=w)
                 small_hidden_states = self.temporal_down_conv(small_hidden_states)
                 _, _, new_h, new_w = small_hidden_states.shape
@@ -635,12 +635,12 @@ class BasicTransformerBlock(nn.Module):
                                                 h=new_h,
                                                 w=new_w)
 
-                # 对缩小后的特征进行norm和attention
+                # Apply norm and attention to the downsampled features
                 small_norm_hidden_states = (self.norm_temporal_small(small_hidden_states, timestep)
                                             if self.use_ada_layer_norm else self.norm_temporal_small(small_hidden_states))
                 small_temporal_attn_output = self.attn_temporal_small(small_norm_hidden_states) + small_hidden_states
 
-                # 将结果放大回原始尺寸
+                # Upsample back to the original resolution
                 small_temporal_attn_output = rearrange(small_temporal_attn_output,
                                                     '(b h w) f c -> (b f) c h w',
                                                     f=video_length,
@@ -648,7 +648,7 @@ class BasicTransformerBlock(nn.Module):
                                                     w=new_w)
                 small_temporal_attn_output = self.temporal_up_conv(small_temporal_attn_output)
 
-                # 检查并调整尺寸
+                # Check and adjust size if needed
                 _, _, upsampled_h, upsampled_w = small_temporal_attn_output.shape
                 if upsampled_h != h or upsampled_w != w:
                     small_temporal_attn_output = F.interpolate(small_temporal_attn_output, size=(h, w), mode='bilinear', align_corners=False)
@@ -659,15 +659,15 @@ class BasicTransformerBlock(nn.Module):
                                                     h=h,
                                                     w=w)
 
-                # 如果尺寸不匹配,进行裁剪或填充
+                # If sequence length mismatches, pad accordingly
                 if small_temporal_attn_output.shape[1] != temporal_attn_output.shape[1]:
-                    print("small_temporal_attn_output 和 temporal_attn_output 不匹配", small_temporal_attn_output.shape[1],
+                    print("small_temporal_attn_output and temporal_attn_output length mismatch", small_temporal_attn_output.shape[1],
                         temporal_attn_output.shape[1])
                     small_temporal_attn_output = F.pad(
                         small_temporal_attn_output,
                         (0, 0, 0, temporal_attn_output.shape[1] - small_temporal_attn_output.shape[1]))
 
-                # 合并两个分支的结果,按照1:0.5的比例
+                # Fuse two branches with a ratio of 1:0.5
                 hidden_states = temporal_attn_output + 0.5 * small_temporal_attn_output
 
                 hidden_states = rearrange(hidden_states, "(b h w) f c -> (b f) (h w) c", h=h, w=w).contiguous()
@@ -831,17 +831,11 @@ class TemporalAttention(CrossAttention):
         if self.upcast_attention:
             query = query.float()
             key = key.float()
-
-        # print('query shape', query.shape)
-        # print('key shape', key.shape)
-        # print('value shape', value.shape)
+            
         # reshape for adding time positional bais
         query = self.scale * rearrange(query, 'b f (h d) -> b h f d', h=self.heads)  # d: dim_head; n: heads
         key = rearrange(key, 'b f (h d) -> b h f d', h=self.heads)  # d: dim_head; n: heads
         value = rearrange(value, 'b f (h d) -> b h f d', h=self.heads)  # d: dim_head; n: heads
-        # print('query shape', query.shape)
-        # print('key shape', key.shape)
-        # print('value shape', value.shape)
 
         # torch.baddbmm only accepte 3-D tensor
         # https://runebook.dev/zh/docs/pytorch/generated/torch.baddbmm
@@ -851,12 +845,8 @@ class TemporalAttention(CrossAttention):
             key = self.rotary_emb.rotate_queries_or_keys(key)
 
         attention_scores = torch.einsum('... h i d, ... h j d -> ... h i j', query, key)
-        # print('attention_scores shape', attention_scores.shape)
-        # print('time_rel_pos_bias shape', time_rel_pos_bias.shape)
-        # print('attention_mask shape', attention_mask.shape)
 
         attention_scores = attention_scores + time_rel_pos_bias
-        # print(attention_scores.shape)
 
         # bert from huggin face
         # attention_scores = attention_scores / math.sqrt(self.dim_head)
@@ -872,7 +862,6 @@ class TemporalAttention(CrossAttention):
         attention_scores = attention_scores - attention_scores.amax(dim=-1, keepdim=True).detach()
 
         attention_probs = nn.functional.softmax(attention_scores, dim=-1)
-        # print(attention_probs[0][0])
 
         # cast back to the original dtype
         attention_probs = attention_probs.to(value.dtype)
@@ -880,11 +869,9 @@ class TemporalAttention(CrossAttention):
         # compute attention output
         # hidden_states = torch.matmul(attention_probs, value)
         hidden_states = torch.einsum('... h i j, ... h j d -> ... h i d', attention_probs, value)
-        # print(hidden_states.shape)
         # hidden_states = self.same_batch_dim_to_heads(hidden_states)
         hidden_states = rearrange(hidden_states, 'b h f d -> b f (h d)')
-        # print(hidden_states.shape)
-        # exit()
+
         return hidden_states
 
 

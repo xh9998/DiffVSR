@@ -80,12 +80,12 @@ class Upsample3D(nn.Module):
             # hidden_states = F.interpolate(hidden_states, scale_factor=[1.0, 2.0, 2.0], mode="nearest")
             try:
                 # print('hidden_states.shape:', hidden_states.shape)
-                # 原来的实现
+                # Original implementation
                 hidden_states = F.interpolate(hidden_states, scale_factor=[1.0, 2.0, 2.0], mode="nearest")
             except RuntimeError as e:
                 if "Expected output.numel() <= std::numeric_limits<int32_t>::max()" in str(e):
                     # print('hidden_states.shape:', hidden_states.shape)
-                    # 如果出现32位存储溢出，使用渐进式上采样
+                    # If 32-bit storage overflows, use progressive upsampling
                     hidden_states = dynamic_batch_chunk_upsample(hidden_states, scale_factor=[1.0, 2.0, 2.0])
                 else:
                     raise e
@@ -342,14 +342,14 @@ class ResnetBlock3DCNN(nn.Module):
         return output_tensor
 
 
-#新加的代码
+# Newly added helper
 def dynamic_batch_chunk_upsample(hidden_states, scale_factor):
     B, C, T, H, W = hidden_states.shape
-    print('这里要发生重新排列了 B, C, T, H, W hidden_states.shape:', hidden_states.shape)
+    # print('Here we need to rearrange B, C, T, H, W hidden_states.shape:', hidden_states.shape)
     new_H, new_W = int(H * scale_factor[1]), int(W * scale_factor[2])
 
-    # 计算每个分块的大小，确保不超过 int32 的限制
-    max_elements = 2**31 - 1  # int32 最大值
+    # Compute per-chunk size to ensure it does not exceed int32 limit
+    max_elements = 2**31 - 1  # int32 max value
     elements_per_sample = C * T * new_H * new_W
     batch_size = max(1, max_elements // elements_per_sample)
 
@@ -359,11 +359,11 @@ def dynamic_batch_chunk_upsample(hidden_states, scale_factor):
 
     for b in range(0, B, batch_size):
         batch_chunk = hidden_states[b:b + batch_size]
-        # 确保通道顺序正确
-        batch_chunk = batch_chunk.contiguous()  # 确保内存连续
+        # Ensure channel/layout memory is contiguous
+        batch_chunk = batch_chunk.contiguous()  # keep memory contiguous
         upsampled_chunk = F.interpolate(batch_chunk, 
                                       scale_factor=scale_factor, 
                                       mode="nearest")
         result[b:b + batch_size] = upsampled_chunk
 
-    return result.contiguous()  # 返回前确保结果内存连续
+    return result.contiguous()  # ensure memory contiguous before returning

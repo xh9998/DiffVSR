@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import json
+import math
 import argparse
 from pathlib import Path
 from typing import List, Tuple
@@ -39,12 +40,14 @@ def load_pipeline(pretrained_model: str) -> StableDiffusionUpscalePipeline:
     # Load VAE model
     vae_path = "./pretrained_models/TE-3DVAE.pt"
     vae_config = "./configs/vae_config.json"
-    pipeline.vae = AutoencoderKLTemporalDecoder.from_config(vae_config)
+    vae_cfg = AutoencoderKLTemporalDecoder.load_config(vae_config)
+    pipeline.vae = AutoencoderKLTemporalDecoder.from_config(vae_cfg)
     pipeline.vae.load_state_dict(torch.load(vae_path, map_location="cpu"), strict=True)
 
     # Load UNet model
     config_path = "./configs/unet_3d_config.json"
-    pipeline.unet = UNet3DVSRModel.from_config(config_path)
+    unet_cfg = UNet3DVSRModel.load_config(config_path)
+    pipeline.unet = UNet3DVSRModel.from_config(unet_cfg)
     checkpoint = torch.load(pretrained_model, map_location="cpu")['ema']
     pipeline.unet.load_state_dict(checkpoint, True)
     pipeline.unet = pipeline.unet.half()

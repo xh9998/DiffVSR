@@ -7,13 +7,6 @@ sys.path.append(os.path.split(sys.path[0])[0])
 import torch
 from torch import nn
 
-# try:
-#     from .attention import Transformer3DModel
-#     from .resnet import Downsample3D, ResnetBlock3D, Upsample3D
-# except:
-#     from attention import Transformer3DModel
-#     from resnet import Downsample3D, ResnetBlock3D, Upsample3D
-
 try:
     from .attention import Transformer3DModel
     from .resnet import Downsample3D, ResnetBlock3D, Upsample3D

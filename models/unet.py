@@ -149,6 +149,7 @@ class UNet3DVSRModel(ModelMixin, ConfigMixin):
         resnet_time_scale_shift: str = "default",
         use_first_frame: bool = False,
         use_relative_position: bool = False,
+        freeze_pretrained_2d_upsampler: bool = False,
     ):
         super().__init__()
         
@@ -681,16 +682,3 @@ if __name__ == '__main__':
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     config_path = "./configs/unet_3d_config.json"
-    # pretrained_model_path = "./pretrained_models/unet_diffusion_pytorch_model.bin"
-    # unet = UNet3DVSRModel.from_pretrained_2d(config_path, pretrained_model_path).to(device)
-
-    # TBD
-
-    # noisy_latents = torch.randn((3, 4, 16, 32, 32)).to(device)
-    # bsz = noisy_latents.shape[0]
-    # timesteps = torch.randint(0, 1000, (bsz,)).to(device)
-    # timesteps = timesteps.long()
-    # encoder_hidden_states = torch.randn((bsz, 77, 768)).to(device)
-
-    # model_pred = unet(noisy_latents, timesteps, encoder_hidden_states).sample
-    # print(model_pred.shape)
