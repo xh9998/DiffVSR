@@ -8,8 +8,8 @@
   Video Super-Resolution Against Complex Degradations
 </h1>
 
-<div>
-  <strong>ICCV 2025</strong>
+<div style="font-size: 22px; font-weight: 700; margin: 4px 0 8px 0;">
+  ICCV 2025
 </div>
 
 <h4 align="center">
