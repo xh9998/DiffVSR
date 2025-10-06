@@ -8,6 +8,10 @@
   Video Super-Resolution Against Complex Degradations
 </h1>
 
+<div>
+  <strong>ICCV 2025</strong>
+</div>
+
 <h4 align="center">
   <!-- Fill these links with your own resources -->
   <a href="https://xh9998.github.io/DiffVSR-project/" target="_blank">
