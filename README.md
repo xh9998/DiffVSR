@@ -4,7 +4,7 @@
   <img src="./assets/title.svg" alt="DiffVSR" width="520"/>
 </p>
 <h1>
-  DiffVSR: Revealing an Effective Recipe for Taming<br>
+  Revealing an Effective Recipe for Taming<br>
   Robust Video Super-Resolution Against Complex Degradations
 </h1>
 

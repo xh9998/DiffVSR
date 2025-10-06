@@ -1,14 +1,29 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 140" width="720" height="140">
-  <rect width="100%" height="100%" fill="none"/>
-  <g font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-weight="700" font-size="96">
-    <text x="20" y="100" fill="#FF3E3E">D</text>
-    <text x="96" y="100" fill="#FF914D">i</text>
-    <text x="130" y="100" fill="#FFC94D">f</text>
-    <text x="170" y="100" fill="#B6E24D">f</text>
-    <text x="210" y="100" fill="#4DDC95">V</text>
-    <text x="290" y="100" fill="#4DB8FF">S</text>
-    <text x="360" y="100" fill="#8564FF">R</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100">
+  <!-- 
+    为了获得更好的字体兼容性，这里定义了一系列备选字体。
+    font-size 和 font-weight 控制了文字的大小和粗细。
+    text-anchor="middle" 让文字水平居中。
+  -->
+  <style>
+    .heavy-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      font-size: 72px;
+      font-weight: 700;
+      text-anchor: middle;
+    }
+  </style>
+  
+  <!-- 
+    <text> 元素定义了文本块的位置。
+    每个 <tspan> 元素包裹一个字母，并使用 'fill' 属性为其上色。
+  -->
+  <text x="50%" y="75" class="heavy-text">
+    <tspan fill="#FF3E3E">D</tspan>
+    <tspan fill="#FF914D">i</tspan>
+    <tspan fill="#FFC94D">f</tspan>
+    <tspan fill="#B6E24D">f</tspan>
+    <tspan fill="#4DDC95">V</tspan>
+    <tspan fill="#4DB8FF">S</tspan>
+    <tspan fill="#8564FF">R</tspan>
+  </text>
 </svg>
-
