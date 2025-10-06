@@ -27,7 +27,7 @@
 <strong>DiffVSR unlocks the power of diffusion models to tackle severe degradation by shifting the focus from complex architectures to a more effective learning strategy.</strong>
 
 <div style="width: 100%; text-align: center; margin:auto;">
-  <img style="width:100%" src="./assets/DiffVSR_method.png" alt="Method Overview" />
+  <img style="width:100%" src="./assets/teaser.png" alt="Teaser" />
 </div>
 
 :open_book: For more visual results, visit the <a href="https://xh9998.github.io/DiffVSR-project/" target="_blank">project page</a>.
@@ -39,6 +39,11 @@
 ## 🔥 Update
 - [2025.10] Inference code is released.
 - [2025.01] This repo is created.
+
+
+
+## 🎬 Overview
+![overall_structure](./assets/DiffVSR_method.png)
 
 
 
