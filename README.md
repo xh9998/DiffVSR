@@ -1,7 +1,7 @@
 <div align="center">
 
 <p>
-  <img src="./assets/title.svg" alt="DiffVSR" width="520"/>
+  <img src="./assets/diffvsr.png" alt="DiffVSR" width="520"/>
 </p>
 <h1>
   Revealing an Effective Recipe for Taming Robust<br>
