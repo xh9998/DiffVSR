@@ -37,16 +37,11 @@
 - [2025.09] Initial public release of inference toolkit and README.
 - [2025.09] Added ffmpeg-based video writer (`--use_ffmpeg`).
 
-## 🎬 Overview
-<!-- Replace with your pipeline figure path -->
-<p align="center">
-  <img src="./assets/DiffVSR_method.png" alt="overall structure" />
-</p>
 
-## 🧩 ILT Illustration
+<!-- ## 🧩 ILT Illustration
 <p align="center">
   <img src="./assets/ILT.png" alt="ILT Illustration" />
-</p>
+</p> -->
 
 
 ## 🔧 Dependencies and Installation
