@@ -108,6 +108,10 @@ Arguments (main):
 The script concatenates an internal positive prompt string.
 
 
+## ❤️ Acknowledgement
+Our work builds upon the foundations laid by many excellent projects in the field. We would like to thank the authors of [LaVie/vsr](https://github.com/Vchitect/LaVie/tree/main/vsr). We also drew inspiration for our inference strategy from [Upscale-A-Video](https://github.com/sczhou/Upscale-A-Video). We are grateful for their contributions to the community.
+
+
 ## 📑 Citation
 If you find this repo useful, please consider citing (fill your bibtex):
 ```bibtex
