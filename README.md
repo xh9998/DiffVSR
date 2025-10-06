@@ -1,7 +1,10 @@
 <div align="center">
 
+<p>
+  <img src="./assets/title.svg" alt="DiffVSR" width="520"/>
+</p>
 <h1>
-  <span style="color: #FF3E3E;">D</span><span style="color: #FF914D;">i</span><span style="color: #FFC94D;">f</span><span style="color: #B6E24D;">f</span><span style="color: #4DDC95;">V</span><span style="color: #4DB8FF;">S</span><span style="color: #8564FF;">R</span>: Revealing an Effective Recipe for Taming<br>
+  DiffVSR: Revealing an Effective Recipe for Taming<br>
   Robust Video Super-Resolution Against Complex Degradations
 </h1>
 
@@ -65,7 +68,7 @@ Please download the following three items from Hugging Face and place them under
 - `DiffVSR_UNet.pt`
 - `upscaler4x/` folder
 
-Download: [`huihui9998/DiffVSR` on Hugging Face](https://huggingface.co/huihui9998/DiffVSR/tree/main)
+Download: [DiffVSR](https://huggingface.co/huihui9998/DiffVSR/tree/main) on Hugging Face
 
 Directory example:
 ```
@@ -87,7 +90,7 @@ python inference_tile.py \
 ```
 
 Arguments (main):
-- `-i/--input_path`: video file, frames folder (avoid trailing slash if name becomes empty), or folder of videos
+- `-i/--input_path`: video file, frames folder, or folder of videos
 - `-o/--output_path`: directory for output mp4
 - `-txt/--val_prompt`: CSV containing `video_name` and `caption`
 - `-p/--pretrained_model`: UNet checkpoint path

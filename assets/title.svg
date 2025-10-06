@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 140" width="720" height="140">
+  <rect width="100%" height="100%" fill="none"/>
+  <g font-family="DejaVu Sans, Arial, Helvetica, sans-serif" font-weight="700" font-size="96">
+    <text x="20" y="100" fill="#FF3E3E">D</text>
+    <text x="96" y="100" fill="#FF914D">i</text>
+    <text x="130" y="100" fill="#FFC94D">f</text>
+    <text x="170" y="100" fill="#B6E24D">f</text>
+    <text x="210" y="100" fill="#4DDC95">V</text>
+    <text x="290" y="100" fill="#4DB8FF">S</text>
+    <text x="360" y="100" fill="#8564FF">R</text>
+  </g>
+</svg>
+
