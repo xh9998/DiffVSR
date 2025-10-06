@@ -4,8 +4,8 @@
   <img src="./assets/title.svg" alt="DiffVSR" width="520"/>
 </p>
 <h1>
-  Revealing an Effective Recipe for Taming<br>
-  Robust Video Super-Resolution Against Complex Degradations
+  Revealing an Effective Recipe for Taming Robust<br>
+  Video Super-Resolution Against Complex Degradations
 </h1>
 
 <h4 align="center">
