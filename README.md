@@ -8,7 +8,7 @@
   Video Super-Resolution Against Complex Degradations
 </h1>
 
-<h2>ICCV 2025</h2>
+<p><span style="font-size: 24px; font-weight: 700;">ICCV 2025</span></p>
 
 <h4 align="center">
   <!-- Fill these links with your own resources -->
