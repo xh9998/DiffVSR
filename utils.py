@@ -53,7 +53,7 @@ def split_and_save_images(upscaled_videos, output_folder):
         image.save(os.path.join(output_folder, f'frame_{t:03d}.png'))
 
 
-def get_prompt_by_video_name(video_name, df, name_column='video_name', prompt_column='sampled_frame_caption'):
+def get_prompt_by_video_name(video_name, df, name_column='video_name', prompt_column='caption'):
     """
     从DataFrame中获取视频对应的prompt
     

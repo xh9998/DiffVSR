@@ -241,8 +241,8 @@ def main(args: argparse.Namespace):
             prompt = get_prompt_by_video_name(
                 video_name, 
                 prompt_df, 
-                name_column='video_path',
-                prompt_column='sampled_frame_caption'
+                name_column='video_name',
+                prompt_column='caption'
             ) + " clear, high quality, high-resolution, 4K"
 
         print(f"Video name: {video_name}\nPrompt: {prompt}")
