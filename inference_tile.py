@@ -15,10 +15,8 @@ import torch
 import torch.nn.functional as F
 import pandas as pd
 from einops import rearrange
-import imageio
 from diffusers import DDIMScheduler
 
-# from models.scheduling_ddim import DDIMScheduler
 from models.unet import UNet3DVSRModel
 from models.pipeline_stable_diffusion_DiffVSR import StableDiffusionUpscalePipeline
 from models.autoencoder_kl_TE_3DVAE import AutoencoderKLTemporalDecoder
@@ -231,7 +229,7 @@ def main(args: argparse.Namespace):
         vframes, fps, size, video_name = read_frame_from_videos(video_path)
         print(f'[{idx}/{len(video_list)}] Processing video: {video_name}')
 
-        save_path = Path(args.output_path) / f"{video_name}_vsr_n{args.noise_level}_g{args.guidance_scale}_s{args.inference_steps}_tile.mp4"
+        save_path = Path(args.output_path) / f"{video_name}_diffvsr_n{args.noise_level}_g{args.guidance_scale}_s{args.inference_steps}.mp4"
         
         if save_path.exists():
             print(f"Skipping existing file: {save_path}")
@@ -269,7 +267,7 @@ def main(args: argparse.Namespace):
 
         # Save video
         upscaled_video = upscaled_video.permute(0, 2, 3, 1).to(torch.uint8).numpy()
-        imageio.mimwrite(str(save_path), upscaled_video, fps=8, quality=9)
+        save_video(upscaled_video, str(save_path), fps=8, use_ffmpeg=args.use_ffmpeg)
 
         print(f'Saved processed video "{video_name}" to {save_path}, Processing time: {process_time:.2f}s\n')
 
@@ -293,6 +291,8 @@ if __name__ == '__main__':
                       help='Path to prompt file')
     parser.add_argument('-oimg', '--outputimage_path', type=str, default=None,
                       help='Path to save individual frames')
+    parser.add_argument('--use_ffmpeg', action='store_true', default=False,
+                      help='Use ffmpeg to encode output video')
     
     args = parser.parse_args()
     main(args)
