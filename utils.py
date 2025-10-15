@@ -30,8 +30,6 @@ def read_frame_from_videos(frame_root):
         frames = torch.Tensor(np.array(frames)).permute(0, 3, 1, 2).contiguous() # TCHW
     size = frames[0].size
 
-    frames = frames.to(device)
-    
     return frames, fps, size, video_name
 
 def get_video_paths(input_root):

@@ -39,6 +39,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+backup/
 eggs/
 .eggs/
 lib/

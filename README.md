@@ -106,6 +106,7 @@ Arguments (main):
 - `-s/--inference_steps`: denoising steps (default 50)
 - `-oimg/--outputimage_path`: dump generated PNG frames when provided
 - `--use_ffmpeg`: use ffmpeg for video encoding (typically smaller files than imageio.mimwrite, with slightly lower visual sharpness)
+- `--tile_size` / `--tile_overlap`: adjust tile size and overlap when VRAM is limited. Smaller tiles and overlaps lower peak memory at the cost of more tiling passes.
 
 ## 🧩 CSV Prompt Format
 `--val_prompt` CSV should include one row per video with columns:
@@ -129,5 +130,3 @@ If you find this repo useful, please consider citing (fill your bibtex):
   year={2025}
 }
 ```
-
-

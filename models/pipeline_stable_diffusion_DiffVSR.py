@@ -589,17 +589,30 @@ class StableDiffusionUpscalePipeline(DiffusionPipeline, TextualInversionLoaderMi
             negative_prompt_embeds=negative_prompt_embeds,
         )
 
-        # 4. Preprocess image
-        image = image.to(dtype=prompt_embeds.dtype, device=device)
+        # 4. Preprocess image on CPU to reduce GPU memory pressure (keep model dtype)
+        target_dtype = prompt_embeds.dtype
+        image = image.to(dtype=target_dtype, device="cpu")
 
-        # 5. Add noise to image
-        noise_level = torch.tensor([noise_level], dtype=torch.long, device=device)
-        noise = randn_tensor(image.shape, generator=generator, device=device, dtype=prompt_embeds.dtype)
-        image = self.low_res_scheduler.add_noise(image, noise, noise_level)
+        # 5. Add noise to image using a CPU generator clone (to keep determinism)
+        base_noise_level = torch.tensor([noise_level], dtype=torch.long, device=image.device)
+
+        def _clone_to_cpu_generator(gen):
+            if gen is None:
+                return None
+            if isinstance(gen, list):
+                return [_clone_to_cpu_generator(g) for g in gen]
+            if gen.device.type == "cpu":
+                return gen
+            seed = gen.initial_seed()
+            return torch.Generator(device="cpu").manual_seed(seed)
+
+        cpu_generator = _clone_to_cpu_generator(generator)
+        noise = randn_tensor(image.shape, generator=cpu_generator, device=image.device, dtype=target_dtype)
+        image = self.low_res_scheduler.add_noise(image, noise, base_noise_level)
 
         batch_multiplier = 2 if do_classifier_free_guidance else 1
         image = torch.cat([image] * batch_multiplier * num_images_per_prompt)
-        noise_level = torch.cat([noise_level] * image.shape[0])
+        noise_level = torch.cat([base_noise_level] * image.shape[0])
 
         # 6. Set timesteps
         self.scheduler.set_timesteps(num_inference_steps, device=device)
@@ -619,8 +632,9 @@ class StableDiffusionUpscalePipeline(DiffusionPipeline, TextualInversionLoaderMi
             generator,
             latents,
         )
+        latents_ori = latents_ori.to("cpu")
 
-        window_size = 8  # Window size
+        window_size = 8
         stride = 4
         
         # Noise strategy
@@ -646,60 +660,25 @@ class StableDiffusionUpscalePipeline(DiffusionPipeline, TextualInversionLoaderMi
 
         vframes_seq = image.shape[2]
         short_seq = window_size
-        stride = stride
 
-        image_ori = image.clone()
+        image_cpu = image
 
-        if vframes_seq > short_seq:  # For long video processing
-            latents_list = []
-            for idx, start_f in enumerate(range(0, vframes_seq - short_seq + stride, stride)):
-                logger.info(f'Processing: [{start_f}-{min(start_f + short_seq, vframes_seq)}/{vframes_seq}]')
-                torch.cuda.empty_cache()
-                end_f = min(start_f + short_seq, vframes_seq)
-
-                latents = latents_ori[:, :, start_f:end_f]
-                image = image_ori[:, :, start_f:end_f]
-
-                with self.progress_bar(total=num_inference_steps) as progress_bar:
-                    for i, t in enumerate(timesteps):
-                        torch.cuda.empty_cache()
-                        # Expand latents for classifier free guidance
-                        latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
-
-                        # Scale model input
-                        latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
-
-                        # Predict noise
-                        noise_pred = self.unet(
-                            latent_model_input,
-                            t,
-                            image,
-                            encoder_hidden_states=prompt_embeds,
-                            class_labels=noise_level
-                        ).sample
-
-                        # Perform guidance
-                        if do_classifier_free_guidance:
-                            noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                            noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
-
-                        # Compute previous noisy sample x_t -> x_t-1
-                        latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
-
-                        # Call callback if provided
-                        if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and
-                                                      (i + 1) % self.scheduler.order == 0):
-                            progress_bar.update()
-                            if callback is not None and i % callback_steps == 0:
-                                callback(i, t, latents)
-
-                        del latent_model_input, noise_pred
-
-                latents_list.append(latents)
-
-            latents = fuse_latents(latents_list, short_seq, stride, vframes_seq)
-
+        latents_chunks = []
+        if vframes_seq > short_seq:
+            chunk_starts = range(0, vframes_seq - short_seq + stride, stride)
         else:
+            chunk_starts = [0]
+
+        noise_level_device = noise_level.to(device)
+
+        for start_f in chunk_starts:
+            end_f = min(start_f + short_seq, vframes_seq)
+            logger.info(f'Processing: [{start_f}-{end_f}/{vframes_seq}]')
+            torch.cuda.empty_cache()
+
+            latents = latents_ori[:, :, start_f:end_f].to(device, dtype=prompt_embeds.dtype)
+            image_chunk = image_cpu[:, :, start_f:end_f].to(device, dtype=prompt_embeds.dtype)
+
             with self.progress_bar(total=num_inference_steps) as progress_bar:
                 for i, t in enumerate(timesteps):
                     torch.cuda.empty_cache()
@@ -713,9 +692,9 @@ class StableDiffusionUpscalePipeline(DiffusionPipeline, TextualInversionLoaderMi
                     noise_pred = self.unet(
                         latent_model_input,
                         t,
-                        image,
+                        image_chunk,
                         encoder_hidden_states=prompt_embeds,
-                        class_labels=noise_level
+                        class_labels=noise_level_device
                     ).sample
 
                     # Perform guidance
@@ -727,12 +706,22 @@ class StableDiffusionUpscalePipeline(DiffusionPipeline, TextualInversionLoaderMi
                     latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs).prev_sample
 
                     # Call callback if provided
-                    if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
+                    if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and
+                                                  (i + 1) % self.scheduler.order == 0):
                         progress_bar.update()
                         if callback is not None and i % callback_steps == 0:
                             callback(i, t, latents)
 
                     del latent_model_input, noise_pred
+
+            latents_chunks.append(latents.to("cpu"))
+            del latents, image_chunk
+            torch.cuda.empty_cache()
+
+        if len(latents_chunks) > 1:
+            latents = fuse_latents(latents_chunks, short_seq, stride, vframes_seq)
+        else:
+            latents = latents_chunks[0]
 
         # 10. Post-processing
         self.vae.to(dtype=torch.float32)
@@ -741,17 +730,19 @@ class StableDiffusionUpscalePipeline(DiffusionPipeline, TextualInversionLoaderMi
         # 11. Convert to frames
         short_seq = 4
         latents = rearrange(latents, 'b c t h w -> (b t) c h w').contiguous()
+        vae_device = next(self.vae.parameters()).device
         if latents.shape[0] > short_seq:  # For video super resolution
             image = []
             for start_f in range(0, latents.shape[0], short_seq):
                 torch.cuda.empty_cache()
                 end_f = min(latents.shape[0], start_f + short_seq)
-                image_ = self.decode_latents_vsr(latents[start_f:end_f], short_seq=short_seq)
+                latents_chunk = latents[start_f:end_f].to(vae_device)
+                image_ = self.decode_latents_vsr(latents_chunk, short_seq=short_seq)
                 image.append(image_)
-                del image_
+                del image_, latents_chunk
             image = torch.cat(image, dim=0)
         else:
-            image = self.decode_latents_vsr(latents, short_seq=short_seq)
+            image = self.decode_latents_vsr(latents.to(vae_device), short_seq=short_seq)
 
         # Offload last model to CPU
         if hasattr(self, "final_offload_hook") and self.final_offload_hook is not None:

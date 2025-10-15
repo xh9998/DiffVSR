@@ -65,16 +65,17 @@ def process_video(vframes: torch.Tensor, pipeline: StableDiffusionUpscalePipelin
     Process a single video
     """
     vframes = (vframes / 255. - 0.5) * 2  # Normalize to [-1, 1]
-    vframes = vframes.to(DEVICE)
-    t, c, h, w = vframes.shape
+    vframes = vframes.float()
+    orig_t, c, h, w = vframes.shape
     
     # Process frame count, ensure it's a multiple of 8
-    if t % 8 != 0:
-        pad_frames = 8 - (t % 8)
+    if orig_t % 8 != 0:
+        pad_frames = 8 - (orig_t % 8)
         padding = torch.stack([vframes[-(i + 2)] for i in range(pad_frames)])
         vframes = torch.cat([vframes, padding], dim=0)
         print(f'Padded frames: {pad_frames}, Current shape: {vframes.shape}')
     
+    t = vframes.shape[0]
     vframes = vframes.unsqueeze(0)
     vframes = rearrange(vframes, 'b t c h w -> b c t h w').contiguous()
 
@@ -84,8 +85,8 @@ def process_video(vframes: torch.Tensor, pipeline: StableDiffusionUpscalePipelin
     with torch.no_grad():
         if h * w > 400 * 400:  # Use tile processing for large videos
             # Set tile size and overlap
-            tile_height = tile_width = 256  # Can be configured via parameters
-            tile_overlap = 64  # Overlap should be >= 64
+            tile_height = tile_width = args.tile_size
+            tile_overlap = args.tile_overlap
             
             # Calculate number of tiles needed
             tiles_x = math.ceil(w / tile_width)
@@ -103,7 +104,7 @@ def process_video(vframes: torch.Tensor, pipeline: StableDiffusionUpscalePipelin
             
             # Initialize output tensor
             output_h, output_w = h * 4, w * 4
-            output = torch.zeros((t, c, output_h, output_w), device=DEVICE)
+            output = torch.zeros((t, c, output_h, output_w), device="cpu", dtype=torch.float32)
             
             # Process each tile
             for y in range(tiles_y):
@@ -136,14 +137,14 @@ def process_video(vframes: torch.Tensor, pipeline: StableDiffusionUpscalePipelin
                     try:
                         # Process current tile
                         output_tile = pipeline(
-                            prompt,
+                            prompt=prompt,
                             image=input_tile,
                             generator=generator,
                             num_inference_steps=args.inference_steps,
                             guidance_scale=args.guidance_scale,
                             noise_level=args.noise_level,
                             negative_prompt=negative_prompt,
-                        ).images
+                        ).images.to("cpu")
                         
                         # Calculate output tile position
                         output_start_x = input_start_x * 4
@@ -172,9 +173,10 @@ def process_video(vframes: torch.Tensor, pipeline: StableDiffusionUpscalePipelin
                             output_end_y_tile = output_start_y_tile + input_tile_height * 4
                         
                         # Place processed tile into output tensor
-                        output[:, :, output_start_y:output_end_y, output_start_x:output_end_x] = \
+                        output[:, :, output_start_y:output_end_y, output_start_x:output_end_x] = (
                             output_tile[:, :, output_start_y_tile:output_end_y_tile,
                                       output_start_x_tile:output_end_x_tile]
+                        )
                     except RuntimeError as error:
                         print('Error', error)
                         continue
@@ -184,16 +186,16 @@ def process_video(vframes: torch.Tensor, pipeline: StableDiffusionUpscalePipelin
         else:
             # Original non-tile processing logic
             upscaled_video = pipeline(
-                prompt,
+                prompt=prompt,
                 image=vframes,
                 generator=generator,
                 num_inference_steps=args.inference_steps,
                 guidance_scale=args.guidance_scale,
                 noise_level=args.noise_level,
                 negative_prompt=negative_prompt,
-            ).images
+            ).images.to("cpu")
 
-    return upscaled_video[:t]
+    return upscaled_video[:orig_t]
 
 def main(args: argparse.Namespace):
     torch.set_grad_enabled(False)
@@ -293,6 +295,10 @@ if __name__ == '__main__':
                       help='Path to save individual frames')
     parser.add_argument('--use_ffmpeg', action='store_true', default=False,
                       help='Use ffmpeg to encode output video')
+    parser.add_argument('--tile_size', type=int, default=256,
+                      help='Tile size (height/width) used during tiled processing (default 256)')
+    parser.add_argument('--tile_overlap', type=int, default=64,
+                      help='Overlap in pixels between tiles during tiled processing (default 64)')
     
     args = parser.parse_args()
     main(args)
